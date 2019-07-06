@@ -1,0 +1,2 @@
+# splitter
+Ethereum splitter project
