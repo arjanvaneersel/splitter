@@ -6,6 +6,15 @@ contract Splitter {
     address bob;
     address carol;
     mapping(address => uint) balances;
+    bool paused;
+
+    modifier active() {
+        require(!paused, "contract is paused");
+        require(alice != address(0), "invalid address for Alice");
+        require(bob != address(0), "invalid address for Bob");
+        require(carol != address(0), "invalid address for Carol");
+        _;
+    }
 
     // onlyOwner is a modifier to limit access to the owner
     modifier onlyOwner() {
@@ -28,6 +37,11 @@ contract Splitter {
     // Constructor. Requires the addresses of alice, bob and carol
     constructor() public {
         owner = msg.sender;
+        paused = true;
+    }
+
+    function pause() public onlyOwner {
+        paused = !paused;
     }
 
     // registerParties will register Alice, Bob and Carol in the contract
@@ -52,14 +66,14 @@ contract Splitter {
     }
 
     // topUp adds the paid value to the sender's balance.
-    function topUp() public payable onlyParticipant {
+    function topUp() public payable active onlyParticipant {
         balances[msg.sender] += msg.value;
     }
 
     // split will split the paid amount over the balances of
     // Bob and Carol. Any remainder will be added to the balance
     // of the sender. This function can only be executed by Alice.
-    function split() public payable onlyAlice {
+    function split() public payable active onlyAlice {
         uint amount = msg.value;
         uint half = amount / 2;
         uint remainder = amount - (half * 2);

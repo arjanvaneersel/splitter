@@ -7,6 +7,51 @@ contract('Splitter', (accounts) => {
         assert.equal(owner.valueOf(), accounts[0], "first account wasn't the owner")
     });
 
+    it('should not top-up balances while paused', async () => {
+        const splitterInstance = await Splitter.deployed();
+
+        let error;
+        try {
+            await splitterInstance.topUp({value: 2, from: accounts[1]});
+        } catch(e) {
+            error = e;
+        }
+        assert.equal(error, 'Error: Returned error: VM Exception while processing transaction: revert contract is paused -- Reason given: contract is paused.');
+    });
+
+    it('should be unpaused only by the owner', async () => {
+        const splitterInstance = await Splitter.deployed();
+
+        // Check that Alice can't unpause the contract
+        let error;
+        try {
+            await splitterInstance.pause({from: accounts[1]});
+        } catch(e) {
+            error = e;
+        }
+        assert.equal(error, 'Error: Returned error: VM Exception while processing transaction: revert');
+
+        error = '';
+        try {
+            await splitterInstance.pause({from: accounts[0]});
+        } catch(e) {
+            error = e;
+        }
+        assert.equal(error, '');
+    });
+
+    it('should not top-up balances while not having registered users', async () => {
+        const splitterInstance = await Splitter.deployed();
+
+        let error;
+        try {
+            await splitterInstance.topUp({value: 2, from: accounts[1]});
+        } catch(e) {
+            error = e;
+        }
+        assert.equal(error, 'Error: Returned error: VM Exception while processing transaction: revert invalid address for Alice -- Reason given: invalid address for Alice.');
+    });
+
     it('should register alice, bob and carol with a balance of 0', async () => {
         const splitterInstance = await Splitter.deployed();
         await splitterInstance.registerParties(accounts[1], accounts[2], accounts[3]);
